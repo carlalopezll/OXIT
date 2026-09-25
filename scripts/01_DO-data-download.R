@@ -1,18 +1,29 @@
+# Script to download DO data directly from the GDrive
+
+# load libraries
 library(googledrive)
 library(purrr)
 library(dplyr)
 library(readr)
 library(stringr)
 
+# Google Driver folder structure
+# for most of them, some are a little different but will work with these for now
+
+# download_date/site/sensor_id/Cat.TXT 
+
+
+# define Google Driver folder ID
 top_folder_id <- "1lhkllY10PrWuFD7KIUWh4tiz83ix-YOb"
 
-# Local staging directory (mirrors the Drive structure loosely)
-dir.create("drive_downloads", showWarnings = FALSE)
+# create local directory to download data, if it doesn't exist yet
+dir.create("data/raw", showWarnings = FALSE)
 
-# 1. List date folders
+# 1. list date folders
+# this is where access will be requested
 date_folders <- drive_ls(path = as_id(top_folder_id), type = "folder")
 
-# 2. For each date folder, list site folders
+# 2. for each date folder, list site folders
 get_site_folders <- function(date_id, date_name) {
   sites <- drive_ls(path = as_id(date_id), type = "folder")
   if (nrow(sites) == 0) return(NULL)

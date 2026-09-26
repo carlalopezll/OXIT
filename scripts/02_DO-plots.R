@@ -2,6 +2,7 @@
 
 library(readr)
 library(ggplot2)
+library(dplyr)
 
 # read csv
 do <- read_csv("data/processed/merged DO data.csv")
@@ -49,3 +50,41 @@ do <- do %>%
 ggplot(do, aes(x=local_datetime, y=do_mgL, color = site)) +
   geom_point() +
   facet_wrap(~HW_MS, ncol = 2)
+
+# want to loop through sites, make a plot, and save that plot
+
+sites <- unique(do$site)
+
+date_lims <- range(do$local_datetime, na.rm = TRUE)
+
+for (s in sites) {
+  
+  # find the scaling factor so temp_c maps onto a similar range as do_mgL
+  scale_factor <- max(do$do_mgL, na.rm = TRUE) / max(do$temp_c, na.rm = TRUE)
+  
+  p <- do %>%
+    filter(site == s) %>%
+    ggplot(aes(x = local_datetime)) +
+    geom_point(aes(y = do_mgL), size = 0.5) +
+    geom_point(aes(y = temp_c * scale_factor), size = 0.5, color = "blue") +
+    geom_hline(yintercept = 2, linetype = "dashed") +
+    scale_x_datetime(limits = date_lims) +
+    scale_y_continuous(
+      name = "DO (mg/L)",
+      sec.axis = sec_axis(~ . / scale_factor, name = "Temperature (°C)")
+    ) +
+    labs(
+      title = paste0("DO time-series in ", s),
+      x = "Date"
+    ) +
+    theme(
+      axis.title.y.right = element_text(color = "blue"),
+      axis.text.y.right = element_text(color = "blue")   # optional: color the tick labels too
+    )
+  
+  ggsave(
+    filename = file.path("graphs", paste0("DO_timeseries_", s, ".png")),
+    plot = p,
+    width = 8, height = 5, dpi = 300
+  )
+}
